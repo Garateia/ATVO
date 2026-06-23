@@ -3,3 +3,6 @@ dist/
 .vercel/
 *.local
 .DS_Store
+.claude/
+vite.config.js.timestamp-*
+BRIEF_CALCULADORA.md
