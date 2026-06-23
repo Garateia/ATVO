@@ -134,14 +134,15 @@ function Step1({ data, onChange, onNext, taxaAcumulo, onTaxaChange }) {
       </div>
 
       <div className="input-group" style={{ maxWidth: 320, marginTop: 16 }}>
-        <div className="input-label">Taxa de acúmulo do cartão (pts/R$)</div>
-        <select value={taxaAcumulo} onChange={e => onTaxaChange(parseFloat(e.target.value))}>
-          <option value={1.0}>1,0 pts/R$ — cartão básico</option>
-          <option value={1.5}>1,5 pts/R$ — estimativa conservadora</option>
-          <option value={2.0}>2,0 pts/R$</option>
-          <option value={2.5}>2,5 pts/R$</option>
-          <option value={3.0}>3,0 pts/R$ — cartão premium</option>
-        </select>
+        <div className="input-label">Taxa de acúmulo do cartão <span className="input-hint">pts por R$ gasto</span></div>
+        <div className="input-wrap">
+          <input
+            type="number"
+            min={0.1} max={10} step={0.1}
+            value={taxaAcumulo}
+            onChange={e => onTaxaChange(parseFloat(e.target.value) || 1.5)}
+          />
+        </div>
       </div>
 
       <div className="result-mini">
