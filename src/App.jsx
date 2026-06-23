@@ -71,15 +71,14 @@ function NumInput({ label, hint, value, onChange }) {
 }
 
 // ─── STEP 1 ──────────────────────────────────────────────────────────────────
-function Step1({ data, onChange, onNext }) {
+function Step1({ data, onChange, onNext, taxaAcumulo, onTaxaChange }) {
   const [sector, setSector] = useState('servicos')
 
   const total = Object.values(data).reduce((a, v) => a + v, 0)
-  const pontos = Math.round(total * 1.5)
+  const pontos = Math.round(total * taxaAcumulo)
 
   const selectSector = (key) => {
     setSector(key)
-    onChange(SECTOR_DEFAULTS[key])
   }
 
   const setField = (field) => (val) => onChange({ ...data, [field]: val })
@@ -134,10 +133,21 @@ function Step1({ data, onChange, onNext }) {
         </div>
       </div>
 
+      <div className="input-group" style={{ maxWidth: 320, marginTop: 16 }}>
+        <div className="input-label">Taxa de acúmulo do cartão (pts/R$)</div>
+        <select value={taxaAcumulo} onChange={e => onTaxaChange(parseFloat(e.target.value))}>
+          <option value={1.0}>1,0 pts/R$ — cartão básico</option>
+          <option value={1.5}>1,5 pts/R$ — estimativa conservadora</option>
+          <option value={2.0}>2,0 pts/R$</option>
+          <option value={2.5}>2,5 pts/R$</option>
+          <option value={3.0}>3,0 pts/R$ — cartão premium</option>
+        </select>
+      </div>
+
       <div className="result-mini">
         <div>
           <div className="label">Total mensal elegível ao cartão</div>
-          <div className="sub-label">Pontos gerados: {pontos.toLocaleString('pt-BR')} pts/mês (est.)</div>
+          <div className="sub-label">Pontos gerados: {pontos.toLocaleString('pt-BR')} pts/mês ({taxaAcumulo} pts/R$)</div>
         </div>
         <div className="value">{fmt(total)}</div>
       </div>
@@ -317,10 +327,10 @@ function Step3({ data, onChange, onNext, onBack }) {
 }
 
 // ─── STEP 4 ──────────────────────────────────────────────────────────────────
-function Step4({ s1, s2, s3, onBack, onRestart }) {
+function Step4({ s1, s2, s3, taxaAcumulo, onBack, onRestart }) {
   const cartaoMensal    = Object.values(s1).reduce((a, v) => a + v, 0)
   const cartaoAnual     = cartaoMensal * 12
-  const pontosCartao    = cartaoMensal * 1.5 * 12
+  const pontosCartao    = cartaoMensal * taxaAcumulo * 12
   const valorPontosCartao = pontosCartao / 1000 * 35
 
   const econViagens   = (s2.nacionais + s2.internacionais) * s2.classe + s2.hoteis * 0.40 + s2.transporte * 0.20
@@ -456,6 +466,7 @@ export default function App() {
   const [s1, setS1] = useState({ fornecedores: 0, ti: 0, marketing: 0, aluguel: 0, seguros: 0, outros: 0 })
   const [s2, setS2] = useState({ nacionais: 0, internacionais: 0, classe: 0.75, hoteis: 0, transporte: 0, combustivel: 0 })
   const [s3, setS3] = useState({ eletro: 0, premios: 0, outros: 0, pontosK: 0, clube: 'nenhum' })
+  const [taxaAcumulo, setTaxaAcumulo] = useState(1.5)
 
   const goTo = useCallback((n) => setStep(n), [])
 
@@ -471,10 +482,10 @@ export default function App() {
       <div className="container">
         <StepProgress current={step} onGo={goTo} />
 
-        {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} />}
+        {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} taxaAcumulo={taxaAcumulo} onTaxaChange={setTaxaAcumulo} />}
         {step === 2 && <Step2 data={s2} onChange={setS2} onNext={() => goTo(3)} onBack={() => goTo(1)} />}
         {step === 3 && <Step3 data={s3} onChange={setS3} onNext={() => goTo(4)} onBack={() => goTo(2)} />}
-        {step === 4 && <Step4 s1={s1} s2={s2} s3={s3} onBack={() => goTo(3)} onRestart={() => goTo(1)} />}
+        {step === 4 && <Step4 s1={s1} s2={s2} s3={s3} taxaAcumulo={taxaAcumulo} onBack={() => goTo(3)} onRestart={() => goTo(1)} />}
       </div>
     </>
   )
