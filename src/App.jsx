@@ -12,6 +12,14 @@ const SECTOR_DEFAULTS = {
   outro:     { fornecedores: 15000, ti: 5000,  marketing: 8000,  aluguel: 6000,  seguros: 4000,  outros: 7000  },
 }
 
+const PLANOS_CLUBE = {
+  nenhum:    { mensalidade: 0,      milheiro: 70, limite: 500,  desconto: 0,  bonus: 0,     label: 'Sem clube (R$ 70/milheiro)' },
+  pro:       { mensalidade: 43.90,  milheiro: 35, limite: 400,  desconto: 20, bonus: 1000,  label: 'Pro — R$ 43,90/mês · até 400 mil pts/mês' },
+  master:    { mensalidade: 106.90, milheiro: 35, limite: 500,  desconto: 40, bonus: 2500,  label: 'Master — R$ 106,90/mês · até 500 mil pts/mês' },
+  vip:       { mensalidade: 211.90, milheiro: 35, limite: 750,  desconto: 40, bonus: 5000,  label: 'VIP — R$ 211,90/mês · até 750 mil pts/mês' },
+  exclusive: { mensalidade: 799.90, milheiro: 35, limite: 1250, desconto: 50, bonus: 20000, label: 'Exclusive — R$ 799,90/mês · até 1,25 mi pts/mês' },
+}
+
 const SECTORS = [
   { key: 'servicos',  icon: 'fa-briefcase',  label: 'Serviços',     sub: 'Consultorias, TI, saúde' },
   { key: 'comercio',  icon: 'fa-store',      label: 'Comércio',     sub: 'Varejo, distribuidoras' },
@@ -213,11 +221,10 @@ function Step2({ data, onChange, onNext, onBack }) {
 // ─── STEP 3 ──────────────────────────────────────────────────────────────────
 function Step3({ data, onChange, onNext, onBack }) {
   const setField = (field) => (val) => onChange({ ...data, [field]: val })
-  const setClubeVal = (e) => onChange({ ...data, clube: parseFloat(e.target.value) })
+  const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
 
-  const custoPorMilheiro = data.clube > 0 ? 35 : 70
-  const custoPontos  = data.pontosK * custoPorMilheiro
-  const custoTotal   = custoPontos + data.clube
+  const custoPontos  = data.pontosK * plano.milheiro
+  const custoTotal   = custoPontos + plano.mensalidade
   const totalResgates = data.eletro + data.premios + data.outros
   const econResgates = totalResgates * 0.60
   const valorPontosAnual = (data.pontosK * 1000 * 12 * 0.08)
@@ -232,7 +239,18 @@ function Step3({ data, onChange, onNext, onBack }) {
       </p>
 
       <div className="info-box">
-        <strong>O Clube Esfera Master:</strong> R$ 106,90/mês, com 40% de desconto na compra de pontos e limite de 500.000 pontos/mês. Com o clube, o milheiro sai a R$ 35 contra R$ 70 no mercado. <strong>Esta é a arbitragem que o CFO aprova.</strong>
+        {data.clube === 'nenhum' ? (
+          <>Selecione um plano Clube Esfera para participar das promoções e comprar pontos a <strong>R$ 35/milheiro</strong> — metade do preço de mercado (R$ 70). Qualquer plano dá acesso às promoções.</>
+        ) : (
+          <>
+            <strong>Clube Esfera {data.clube.charAt(0).toUpperCase() + data.clube.slice(1)}:</strong>{' '}
+            R$ {plano.mensalidade.toFixed(2).replace('.', ',')}/mês ·{' '}
+            {plano.bonus.toLocaleString('pt-BR')} pts bônus/mês ·{' '}
+            até <strong>{plano.limite >= 1000 ? `${plano.limite / 1000} milhão` : `${plano.limite} mil`} pts/mês</strong> para comprar.{' '}
+            Assinantes compram via promoção a <strong>R$ 35/milheiro</strong> — independente do plano.{' '}
+            <strong>Esta é a arbitragem que o CFO aprova.</strong>
+          </>
+        )}
       </div>
 
       <div className="grid-2">
@@ -255,28 +273,29 @@ function Step3({ data, onChange, onNext, onBack }) {
             <div className="slider-wrap">
               <input
                 type="range"
-                min={0} max={500} step={10}
-                value={data.pontosK}
+                min={0} max={plano.limite} step={10}
+                value={Math.min(data.pontosK, plano.limite)}
                 onChange={e => onChange({ ...data, pontosK: parseInt(e.target.value) })}
               />
               <div className="slider-labels">
                 <span>0 mil pts</span>
                 <span className="mid">{data.pontosK} mil pts</span>
-                <span>500 mil pts</span>
+                <span>{plano.limite >= 1000 ? `${plano.limite/1000} mi pts` : `${plano.limite} mil pts`}</span>
               </div>
             </div>
           </div>
           <div className="input-group" style={{ marginTop: 8 }}>
             <div className="input-label">Plano Clube Esfera</div>
-            <select value={data.clube} onChange={setClubeVal}>
-              <option value={0}>Sem clube (R$ 70/milheiro)</option>
-              <option value={106.9}>Master — R$ 106,90/mês (R$ 35/milheiro)</option>
+            <select value={data.clube} onChange={e => onChange({ ...data, clube: e.target.value, pontosK: Math.min(data.pontosK, PLANOS_CLUBE[e.target.value]?.limite ?? 500) })}>
+              {Object.entries(PLANOS_CLUBE).map(([key, p]) => (
+                <option key={key} value={key}>{p.label}</option>
+              ))}
             </select>
           </div>
           <div className="cost-box">
             <div className="cost-label">Custo mensal do investimento</div>
             <div className="cost-value">{fmt(custoTotal)}</div>
-            <div className="cost-note">{(data.pontosK * 1000).toLocaleString('pt-BR')} pontos disponíveis para resgates</div>
+            <div className="cost-note">{(Math.min(data.pontosK, plano.limite) * 1000).toLocaleString('pt-BR')} pontos disponíveis · R$ {plano.milheiro}/milheiro</div>
           </div>
         </div>
       </div>
@@ -308,9 +327,9 @@ function Step4({ s1, s2, s3, onBack, onRestart }) {
   const totalViagens  = s2.nacionais + s2.internacionais + s2.hoteis + s2.transporte
 
   const totalResgates    = s3.eletro + s3.premios + s3.outros
-  const custoPorMilheiro = s3.clube > 0 ? 35 : 70
-  const custoPontosAnual = s3.pontosK * custoPorMilheiro * 12
-  const custoClube       = s3.clube * 12
+  const planoS3         = PLANOS_CLUBE[s3.clube] ?? PLANOS_CLUBE.nenhum
+  const custoPontosAnual = s3.pontosK * planoS3.milheiro * 12
+  const custoClube       = planoS3.mensalidade * 12
   const econResgates     = totalResgates * 0.60
   const valorPontosComprados = s3.pontosK * 1000 * 12 * 0.08
 
@@ -436,7 +455,7 @@ export default function App() {
 
   const [s1, setS1] = useState({ fornecedores: 0, ti: 0, marketing: 0, aluguel: 0, seguros: 0, outros: 0 })
   const [s2, setS2] = useState({ nacionais: 0, internacionais: 0, classe: 0.75, hoteis: 0, transporte: 0, combustivel: 0 })
-  const [s3, setS3] = useState({ eletro: 0, premios: 0, outros: 0, pontosK: 0, clube: 0 })
+  const [s3, setS3] = useState({ eletro: 0, premios: 0, outros: 0, pontosK: 0, clube: 'nenhum' })
 
   const goTo = useCallback((n) => setStep(n), [])
 

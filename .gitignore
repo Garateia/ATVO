@@ -6,3 +6,4 @@ dist/
 .claude/
 vite.config.js.timestamp-*
 BRIEF_CALCULADORA.md
+.vercel
