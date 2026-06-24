@@ -71,11 +71,12 @@ function NumInput({ label, hint, value, onChange }) {
 }
 
 // ─── STEP 1 ──────────────────────────────────────────────────────────────────
-function Step1({ data, onChange, onNext, taxaAcumulo, onTaxaChange }) {
+function Step1({ data, onChange, onNext, ptsPorUSD, cambio, onPtsChange, onCambioChange }) {
   const [sector, setSector] = useState('servicos')
 
   const total = Object.values(data).reduce((a, v) => a + v, 0)
-  const pontos = Math.round(total * taxaAcumulo)
+  const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
+  const pontos = Math.round(total * taxaEfetiva)
 
   const selectSector = (key) => {
     setSector(key)
@@ -133,22 +134,37 @@ function Step1({ data, onChange, onNext, taxaAcumulo, onTaxaChange }) {
         </div>
       </div>
 
-      <div className="input-group" style={{ maxWidth: 320, marginTop: 16 }}>
-        <div className="input-label">Taxa de acúmulo do cartão <span className="input-hint">pts por R$ gasto</span></div>
-        <div className="input-wrap">
-          <input
-            type="number"
-            min={0.1} max={10} step={0.1}
-            value={taxaAcumulo}
-            onChange={e => onTaxaChange(parseFloat(e.target.value) || 1.5)}
-          />
+      <div className="grid-2" style={{ marginTop: 16 }}>
+        <div className="input-group">
+          <div className="input-label">Pontuação do cartão <span className="input-hint">pts por US$</span></div>
+          <div className="input-wrap">
+            <input
+              type="number"
+              min={0.1} max={20} step={0.1}
+              value={ptsPorUSD}
+              onChange={e => onPtsChange(parseFloat(e.target.value) || 1)}
+              style={{ paddingLeft: 12 }}
+            />
+          </div>
+        </div>
+        <div className="input-group">
+          <div className="input-label">Câmbio atual <span className="input-hint">R$/US$</span></div>
+          <div className="input-wrap">
+            <span className="prefix">R$</span>
+            <input
+              type="number"
+              min={1} max={20} step={0.01}
+              value={cambio}
+              onChange={e => onCambioChange(parseFloat(e.target.value) || 5.2)}
+            />
+          </div>
         </div>
       </div>
 
       <div className="result-mini">
         <div>
           <div className="label">Total mensal elegível ao cartão</div>
-          <div className="sub-label">Pontos gerados: {pontos.toLocaleString('pt-BR')} pts/mês ({taxaAcumulo} pts/R$)</div>
+          <div className="sub-label">Pontos gerados: {pontos.toLocaleString('pt-BR')} pts/mês · {ptsPorUSD} pts/US$ ÷ R$ {cambio} = {taxaEfetiva.toFixed(3)} pts/R$</div>
         </div>
         <div className="value">{fmt(total)}</div>
       </div>
@@ -328,10 +344,11 @@ function Step3({ data, onChange, onNext, onBack }) {
 }
 
 // ─── STEP 4 ──────────────────────────────────────────────────────────────────
-function Step4({ s1, s2, s3, taxaAcumulo, onBack, onRestart }) {
+function Step4({ s1, s2, s3, ptsPorUSD, cambio, onBack, onRestart }) {
+  const taxaEfetiva     = cambio > 0 ? ptsPorUSD / cambio : 0
   const cartaoMensal    = Object.values(s1).reduce((a, v) => a + v, 0)
   const cartaoAnual     = cartaoMensal * 12
-  const pontosCartao    = cartaoMensal * taxaAcumulo * 12
+  const pontosCartao    = cartaoMensal * taxaEfetiva * 12
   const valorPontosCartao = pontosCartao / 1000 * 35
 
   const econViagens   = (s2.nacionais + s2.internacionais) * s2.classe + s2.hoteis * 0.40 + s2.transporte * 0.20
@@ -467,7 +484,8 @@ export default function App() {
   const [s1, setS1] = useState({ fornecedores: 0, ti: 0, marketing: 0, aluguel: 0, seguros: 0, outros: 0 })
   const [s2, setS2] = useState({ nacionais: 0, internacionais: 0, classe: 0.75, hoteis: 0, transporte: 0, combustivel: 0 })
   const [s3, setS3] = useState({ eletro: 0, premios: 0, outros: 0, pontosK: 0, clube: 'nenhum' })
-  const [taxaAcumulo, setTaxaAcumulo] = useState(1.5)
+  const [ptsPorUSD, setPtsPorUSD] = useState(2)
+  const [cambio, setCambio] = useState(5.20)
 
   const goTo = useCallback((n) => setStep(n), [])
 
@@ -483,10 +501,10 @@ export default function App() {
       <div className="container">
         <StepProgress current={step} onGo={goTo} />
 
-        {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} taxaAcumulo={taxaAcumulo} onTaxaChange={setTaxaAcumulo} />}
+        {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={setPtsPorUSD} onCambioChange={setCambio} />}
         {step === 2 && <Step2 data={s2} onChange={setS2} onNext={() => goTo(3)} onBack={() => goTo(1)} />}
         {step === 3 && <Step3 data={s3} onChange={setS3} onNext={() => goTo(4)} onBack={() => goTo(2)} />}
-        {step === 4 && <Step4 s1={s1} s2={s2} s3={s3} taxaAcumulo={taxaAcumulo} onBack={() => goTo(3)} onRestart={() => goTo(1)} />}
+        {step === 4 && <Step4 s1={s1} s2={s2} s3={s3} ptsPorUSD={ptsPorUSD} cambio={cambio} onBack={() => goTo(3)} onRestart={() => goTo(1)} />}
       </div>
     </>
   )
