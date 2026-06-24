@@ -153,7 +153,7 @@ body {
   font-weight: 600;
   pointer-events: none;
 }
-input[type="number"], select {
+input[type="number"], input[type="text"], select {
   width: 100%;
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -168,7 +168,7 @@ input[type="number"], select {
 }
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
-input[type="number"]:focus, select:focus { border-color: var(--gold); }
+input[type="number"]:focus, input[type="text"]:focus, select:focus { border-color: var(--gold); }
 select { padding-left: 12px; cursor: pointer; }
 
 /* INFO BOX */
@@ -349,12 +349,40 @@ input[type="range"]::-webkit-slider-thumb {
 .btn-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 24px #c9a84c55; }
 
 @media (max-width: 768px) {
-  .container { padding: 20px; }
-  .header { padding: 16px 20px; }
+  .container { padding: 16px; }
+  .header { padding: 14px 16px; }
+
+  .section-title { font-size: 22px; }
+
+  .steps { margin-bottom: 24px; }
+  .steps::before { top: 16px; }
+  .step-num { width: 32px; height: 32px; font-size: 12px; }
+  .step-label { font-size: 10px; }
+
   .grid-2 { grid-template-columns: 1fr; }
-  .result-grid { grid-template-columns: 1fr; }
+  .result-grid { grid-template-columns: 1fr 1fr; }
   .sector-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .result-hero { padding: 24px 16px; }
   .result-hero .big-number { font-size: 44px; }
-  .cta-box { flex-direction: column; text-align: center; }
+
+  .result-mini { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .result-mini .value { font-size: 22px; }
+  .result-mini .sub-label { font-size: 10px; }
+
   .breakdown-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .breakdown-row .br-values { flex-wrap: wrap; gap: 8px; }
+
+  .cta-box { flex-direction: column; text-align: center; padding: 20px 16px; }
+  .btn-cta { width: 100%; }
+
+  .nav .btn { font-size: 13px; padding: 12px 18px; }
+}
+
+@media (max-width: 480px) {
+  .section-title { font-size: 20px; }
+  .result-grid { grid-template-columns: 1fr; }
+  .result-hero .big-number { font-size: 36px; }
+  .step-label { display: none; }
+  .step-item.active .step-label { display: block; }
 }

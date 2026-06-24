@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n) => 'R$ ' + Math.round(n).toLocaleString('pt-BR')
@@ -52,6 +52,32 @@ function StepProgress({ current, onGo }) {
 
 // ─── Input helpers ───────────────────────────────────────────────────────────
 function NumInput({ label, hint, value, onChange }) {
+  const inputRef = useRef(null)
+  const displayValue = value === 0 ? '' : value.toLocaleString('pt-BR')
+
+  const handleChange = (e) => {
+    const input = e.target
+    const oldVal = input.value
+    const oldCursor = input.selectionStart
+    const digitsBeforeCursor = oldVal.slice(0, oldCursor).replace(/\D/g, '').length
+
+    const digits = oldVal.replace(/\D/g, '')
+    const num = digits === '' ? 0 : parseInt(digits, 10)
+    const newVal = num === 0 ? '' : num.toLocaleString('pt-BR')
+
+    onChange(num)
+
+    requestAnimationFrame(() => {
+      if (!inputRef.current) return
+      let pos = newVal.length, count = 0
+      for (let i = 0; i < newVal.length; i++) {
+        if (newVal[i] !== '.') count++
+        if (count === digitsBeforeCursor) { pos = i + 1; break }
+      }
+      inputRef.current.setSelectionRange(pos, pos)
+    })
+  }
+
   return (
     <div className="input-group">
       <div className="input-label">
@@ -61,9 +87,13 @@ function NumInput({ label, hint, value, onChange }) {
       <div className="input-wrap">
         <span className="prefix">R$</span>
         <input
-          type="number"
-          value={value}
-          onChange={e => onChange(parseFloat(e.target.value) || 0)}
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          value={displayValue}
+          placeholder="0"
+          onFocus={e => e.target.select()}
+          onChange={handleChange}
         />
       </div>
     </div>
