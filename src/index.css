@@ -348,6 +348,28 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .btn-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 24px #c9a84c55; }
 
+/* TIPO SELECTOR */
+.tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
+.tipo-card {
+  background: var(--bg2);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 36px 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  color: var(--text);
+}
+.tipo-card:hover { border-color: var(--gold); background: #c9a84c0d; transform: translateY(-2px); box-shadow: 0 8px 32px #c9a84c22; }
+.tipo-icon { font-size: 36px; color: var(--gold); }
+.tipo-label { font-size: 20px; font-weight: 700; }
+.tipo-sub { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
 @media (max-width: 768px) {
   .container { padding: 16px; }
   .header { padding: 14px 16px; }
@@ -385,4 +407,5 @@ input[type="range"]::-webkit-slider-thumb {
   .result-hero .big-number { font-size: 36px; }
   .step-label { display: none; }
   .step-item.active .step-label { display: block; }
+  .tipo-grid { grid-template-columns: 1fr; }
 }

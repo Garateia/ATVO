@@ -507,17 +507,294 @@ function Step4({ s1, s2, s3, ptsPorUSD, cambio, onBack, onRestart }) {
   )
 }
 
+// ─── TIPO SELECTOR ───────────────────────────────────────────────────────────
+function TipoSelector({ onSelect }) {
+  return (
+    <>
+      <div className="section-tag">Calculadora de ROI · ATVO</div>
+      <div className="section-title">Qual é o perfil do cliente?</div>
+      <p className="section-desc">
+        A simulação é personalizada conforme o tipo — pessoa física ou empresa.
+      </p>
+      <div className="tipo-grid">
+        <button className="tipo-card" onClick={() => onSelect('pf')}>
+          <div className="tipo-icon"><i className="fa-solid fa-user" /></div>
+          <div className="tipo-label">Pessoa Física</div>
+          <div className="tipo-sub">Consumidor individual que quer maximizar pontos no cartão pessoal</div>
+        </button>
+        <button className="tipo-card" onClick={() => onSelect('pj')}>
+          <div className="tipo-icon"><i className="fa-solid fa-building" /></div>
+          <div className="tipo-label">Pessoa Jurídica</div>
+          <div className="tipo-sub">Empresa ou MEI com gastos operacionais pagáveis no cartão corporativo</div>
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ─── STEP PF ─────────────────────────────────────────────────────────────────
+function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange, onNext, onBack }) {
+  const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
+  const totalMensal = data.gastoAtual + data.gastoMigravel
+  const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
+  const pontosMes = Math.round(totalMensal * taxaEfetiva)
+
+  return (
+    <>
+      <div className="section-tag">Pessoa Física</div>
+      <div className="section-title">Gasto Mensal com Cartão</div>
+      <p className="section-desc">
+        Mapeamos quanto você gasta hoje no cartão e quanto ainda pode migrar — transformando consumo já planejado em pontos.
+      </p>
+
+      <div className="info-box">
+        <strong>Princípio ATVO:</strong> Você já tem esses gastos. Direcionar tudo para o cartão certo não cria despesa nova — gera pontos que podem valer passagens e produtos com até 90% de desconto.
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-label">
+            <span className="icon"><i className="fa-solid fa-credit-card" /></span>
+            Gasto atual no cartão
+          </div>
+          <NumInput label="Quanto gasta por mês no cartão hoje" hint="média mensal" value={data.gastoAtual} onChange={v => onChange({ ...data, gastoAtual: v })} />
+        </div>
+        <div className="card">
+          <div className="card-label">
+            <span className="icon"><i className="fa-solid fa-arrow-right-arrow-left" /></span>
+            Potencial de migração
+          </div>
+          <NumInput label="Gasto fora do cartão que pode migrar" hint="online/débito/dinheiro" value={data.gastoMigravel} onChange={v => onChange({ ...data, gastoMigravel: v })} />
+        </div>
+      </div>
+
+      <div className="grid-2" style={{ marginTop: 16 }}>
+        <div className="input-group">
+          <div className="input-label">Pontuação do cartão <span className="input-hint">pts por US$</span></div>
+          <div className="input-wrap">
+            <input type="number" min={0.1} max={20} step={0.1} value={ptsPorUSD} onChange={e => onPtsChange(parseFloat(e.target.value) || 1)} style={{ paddingLeft: 12 }} />
+          </div>
+        </div>
+        <div className="input-group">
+          <div className="input-label">Câmbio atual <span className="input-hint">R$/US$</span></div>
+          <div className="input-wrap">
+            <span className="prefix">R$</span>
+            <input type="number" min={1} max={20} step={0.01} value={cambio} onChange={e => onCambioChange(parseFloat(e.target.value) || 5.2)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid-2" style={{ marginTop: 16 }}>
+        <div className="card">
+          <div className="card-label">
+            <span className="icon"><i className="fa-solid fa-coins" /></span>
+            Clube Esfera (opcional)
+          </div>
+          <div className="input-group">
+            <div className="input-label">Plano Clube Esfera</div>
+            <select value={data.clube} onChange={e => onChange({ ...data, clube: e.target.value, pontosK: Math.min(data.pontosK, PLANOS_CLUBE[e.target.value]?.limite ?? 500) })}>
+              {Object.entries(PLANOS_CLUBE).map(([key, p]) => (
+                <option key={key} value={key}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+          {data.clube !== 'nenhum' && (
+            <div className="input-group">
+              <div className="input-label">Pontos/mês que deseja comprar</div>
+              <div className="slider-wrap">
+                <input
+                  type="range"
+                  min={0} max={plano.limite} step={10}
+                  value={Math.min(data.pontosK, plano.limite)}
+                  onChange={e => onChange({ ...data, pontosK: parseInt(e.target.value) })}
+                />
+                <div className="slider-labels">
+                  <span>0</span>
+                  <span className="mid">{data.pontosK} mil pts</span>
+                  <span>{plano.limite >= 1000 ? `${plano.limite/1000} mi` : `${plano.limite} mil`}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="card">
+          <div className="card-label">
+            <span className="icon"><i className="fa-solid fa-chart-line" /></span>
+            Potencial mensal
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <div className="input-label">Total no cartão</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{fmt(totalMensal)}</div>
+          </div>
+          <div>
+            <div className="input-label">Pontos gerados/mês</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{pontosMes.toLocaleString('pt-BR')} pts</div>
+            <div className="input-hint" style={{ marginTop: 4 }}>{ptsPorUSD} pts/US$ ÷ R$ {cambio} = {taxaEfetiva.toFixed(3)} pts/R$</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="nav">
+        <button className="btn btn-secondary" onClick={onBack}>← Voltar</button>
+        <button className="btn btn-primary" onClick={onNext}>Ver Resultado →</button>
+      </div>
+    </>
+  )
+}
+
+// ─── STEP PF RESULT ──────────────────────────────────────────────────────────
+function StepPFResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
+  const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
+  const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
+  const totalMensal = data.gastoAtual + data.gastoMigravel
+  const pontosAno = totalMensal * taxaEfetiva * 12
+  const valorPontosCartao = pontosAno / 1000 * 35
+
+  const custoPontosAnual = data.pontosK * plano.milheiro * 12
+  const custoClube = plano.mensalidade * 12
+  const valorPontosComprados = data.pontosK * 1000 * 12 * 0.08
+
+  const econTotal = valorPontosCartao + valorPontosComprados
+  const investimento = custoPontosAnual + custoClube
+  const roiLiquido = econTotal - investimento
+
+  const quarterBars = [3, 6, 9, 12].map(m => {
+    const acum = (econTotal / 12) * m
+    const invest = (investimento / 12) * m
+    const balance = acum - invest
+    const pct = Math.min(100, Math.round(acum / Math.max(econTotal, 1) * 100))
+    const color = balance >= 0 ? '#2ecc71' : '#c9a84c'
+    return { m, balance, pct, color }
+  })
+
+  return (
+    <>
+      <div className="section-tag">Diagnóstico ATVO · Pessoa Física</div>
+      <div className="section-title">ROI do seu cartão</div>
+      <p className="section-desc">Com base nos seus gastos mensais, este é o potencial de retorno com a estratégia ATVO.</p>
+
+      <div className="result-hero">
+        <div className="headline">Valor gerado pelo cartão / Ano</div>
+        <div className="big-number">{fmt(econTotal)}</div>
+        <div className="sub">em pontos e resgates com o Método ATVO</div>
+      </div>
+
+      <div className="result-grid">
+        <div className="result-card">
+          <div className="rc-label">Pontos acumulados / Ano</div>
+          <div className="rc-value text-gold">{Math.round(pontosAno).toLocaleString('pt-BR')}</div>
+          <div className="rc-note">via gastos no cartão</div>
+        </div>
+        <div className="result-card">
+          <div className="rc-label">Valor dos pontos / Ano</div>
+          <div className="rc-value text-green">{fmt(valorPontosCartao)}</div>
+          <div className="rc-note">a R$ 35/milheiro via resgate</div>
+        </div>
+        {investimento > 0 && <>
+          <div className="result-card">
+            <div className="rc-label">Custo do Clube / Ano</div>
+            <div className="rc-value text-gold">{fmt(investimento)}</div>
+            <div className="rc-note">mensalidade + pontos comprados</div>
+          </div>
+          <div className="result-card">
+            <div className="rc-label">ROI Líquido / Ano</div>
+            <div className="rc-value text-green">{fmt(roiLiquido)}</div>
+            <div className="rc-note">economia menos investimento</div>
+          </div>
+        </>}
+      </div>
+
+      <div className="breakdown">
+        <div className="breakdown-title">Detalhamento</div>
+        <div className="breakdown-row">
+          <div className="br-label"><i className="fa-solid fa-credit-card" /> Gasto atual no cartão / mês</div>
+          <div className="br-values"><div className="br-saving">{fmt(data.gastoAtual)}</div></div>
+        </div>
+        <div className="breakdown-row">
+          <div className="br-label"><i className="fa-solid fa-arrow-right-arrow-left" /> Migrado para o cartão / mês</div>
+          <div className="br-values">
+            <div className="br-saving">+ {fmt(data.gastoMigravel)}</div>
+            <div className="br-pct">novo potencial</div>
+          </div>
+        </div>
+        <div className="breakdown-row">
+          <div className="br-label"><i className="fa-solid fa-coins" /> Pontos do cartão / Ano</div>
+          <div className="br-values">
+            <div className="br-current">{Math.round(pontosAno).toLocaleString('pt-BR')} pts</div>
+            <div className="br-saving">= {fmt(valorPontosCartao)}</div>
+            <div className="br-pct">100% grátis</div>
+          </div>
+        </div>
+        {data.pontosK > 0 && (
+          <div className="breakdown-row">
+            <div className="br-label"><i className="fa-solid fa-bag-shopping" /> Pontos comprados via Clube / Ano</div>
+            <div className="br-values">
+              <div className="br-current">{(data.pontosK * 1000 * 12).toLocaleString('pt-BR')} pts</div>
+              <div className="br-saving">= {fmt(valorPontosComprados)}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {investimento > 0 && (
+        <div className="payback-bar-wrap">
+          <div className="payback-bar-title">Acúmulo de Valor ao Longo do Ano</div>
+          {quarterBars.map(({ m, balance, pct, color }) => (
+            <div className="bar-row" key={m}>
+              <div className="bar-header">
+                <span className="bar-label">{m} meses</span>
+                <span style={{ color, fontWeight: 700 }}>{balance >= 0 ? '+' : ''}{fmt(balance)}</span>
+              </div>
+              <div className="bar-track">
+                <div className="bar-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="cta-box">
+        <div className="cta-text">
+          <div className="cta-title">Cada mês sem o método é retorno perdido.</div>
+          <div className="cta-desc">
+            Cada real gasto fora do cartão certo é um ponto que poderia virar <strong>passagem, produto ou cashback</strong>.
+          </div>
+        </div>
+        <button className="btn-cta" onClick={onRestart}>Refazer Simulação</button>
+      </div>
+
+      <div className="nav">
+        <button className="btn btn-secondary" onClick={onBack}>← Revisar dados</button>
+        <div />
+      </div>
+    </>
+  )
+}
+
 // ─── APP ROOT ────────────────────────────────────────────────────────────────
 export default function App() {
+  const [tipo, setTipo] = useState(null)
   const [step, setStep] = useState(1)
+  const [pfStep, setPfStep] = useState(1)
 
   const [s1, setS1] = useState({ fornecedores: 0, ti: 0, marketing: 0, aluguel: 0, seguros: 0, outros: 0 })
   const [s2, setS2] = useState({ nacionais: 0, internacionais: 0, classe: 0.75, hoteis: 0, transporte: 0, combustivel: 0 })
   const [s3, setS3] = useState({ eletro: 0, premios: 0, outros: 0, pontosK: 0, clube: 'nenhum' })
+  const [pfData, setPfData] = useState({ gastoAtual: 0, gastoMigravel: 0, clube: 'nenhum', pontosK: 0 })
   const [ptsPorUSD, setPtsPorUSD] = useState(2)
   const [cambio, setCambio] = useState(5.20)
 
   const goTo = useCallback((n) => setStep(n), [])
+
+  const restart = useCallback(() => {
+    setTipo(null)
+    setStep(1)
+    setPfStep(1)
+    setS1({ fornecedores: 0, ti: 0, marketing: 0, aluguel: 0, seguros: 0, outros: 0 })
+    setS2({ nacionais: 0, internacionais: 0, classe: 0.75, hoteis: 0, transporte: 0, combustivel: 0 })
+    setS3({ eletro: 0, premios: 0, outros: 0, pontosK: 0, clube: 'nenhum' })
+    setPfData({ gastoAtual: 0, gastoMigravel: 0, clube: 'nenhum', pontosK: 0 })
+  }, [])
 
   return (
     <>
@@ -529,12 +806,32 @@ export default function App() {
       </div>
 
       <div className="container">
-        <StepProgress current={step} onGo={goTo} />
+        {!tipo && <TipoSelector onSelect={setTipo} />}
 
-        {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={setPtsPorUSD} onCambioChange={setCambio} />}
-        {step === 2 && <Step2 data={s2} onChange={setS2} onNext={() => goTo(3)} onBack={() => goTo(1)} />}
-        {step === 3 && <Step3 data={s3} onChange={setS3} onNext={() => goTo(4)} onBack={() => goTo(2)} />}
-        {step === 4 && <Step4 s1={s1} s2={s2} s3={s3} ptsPorUSD={ptsPorUSD} cambio={cambio} onBack={() => goTo(3)} onRestart={() => goTo(1)} />}
+        {tipo === 'pf' && pfStep === 1 && (
+          <StepPF
+            data={pfData} onChange={setPfData}
+            ptsPorUSD={ptsPorUSD} cambio={cambio}
+            onPtsChange={setPtsPorUSD} onCambioChange={setCambio}
+            onNext={() => setPfStep(2)} onBack={() => setTipo(null)}
+          />
+        )}
+        {tipo === 'pf' && pfStep === 2 && (
+          <StepPFResult
+            data={pfData} ptsPorUSD={ptsPorUSD} cambio={cambio}
+            onBack={() => setPfStep(1)} onRestart={restart}
+          />
+        )}
+
+        {tipo === 'pj' && (
+          <>
+            <StepProgress current={step} onGo={goTo} />
+            {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={setPtsPorUSD} onCambioChange={setCambio} />}
+            {step === 2 && <Step2 data={s2} onChange={setS2} onNext={() => goTo(3)} onBack={() => goTo(1)} />}
+            {step === 3 && <Step3 data={s3} onChange={setS3} onNext={() => goTo(4)} onBack={() => goTo(2)} />}
+            {step === 4 && <Step4 s1={s1} s2={s2} s3={s3} ptsPorUSD={ptsPorUSD} cambio={cambio} onBack={() => goTo(3)} onRestart={restart} />}
+          </>
+        )}
       </div>
     </>
   )
