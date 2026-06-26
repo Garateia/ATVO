@@ -535,16 +535,17 @@ function TipoSelector({ onSelect }) {
 // ─── STEP PF ─────────────────────────────────────────────────────────────────
 function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange, onNext, onBack }) {
   const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
-  const totalMensal = data.gastoAtual + data.gastoMigravel
+  const gastoMigravel = Math.round(data.gastoForaCartao * (data.pctMigravel / 100))
+  const totalElegivel = data.gastoAtual + gastoMigravel
   const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
-  const pontosMes = Math.round(totalMensal * taxaEfetiva)
+  const pontosMes = Math.round(totalElegivel * taxaEfetiva)
 
   return (
     <>
       <div className="section-tag">Pessoa Física</div>
-      <div className="section-title">Gasto Mensal com Cartão</div>
+      <div className="section-title">Gastos Mensais</div>
       <p className="section-desc">
-        Mapeamos quanto você gasta hoje no cartão e quanto ainda pode migrar — transformando consumo já planejado em pontos.
+        Mapeamos o que você gasta hoje no cartão e tudo que ainda paga fora — para descobrir quanto pode ser migrado e gerar pontos.
       </p>
 
       <div className="info-box">
@@ -557,14 +558,29 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
             <span className="icon"><i className="fa-solid fa-credit-card" /></span>
             Gasto atual no cartão
           </div>
-          <NumInput label="Quanto gasta por mês no cartão hoje" hint="média mensal" value={data.gastoAtual} onChange={v => onChange({ ...data, gastoAtual: v })} />
+          <NumInput label="Gasto mensal atual com cartão de crédito" hint="média mensal" value={data.gastoAtual} onChange={v => onChange({ ...data, gastoAtual: v })} />
         </div>
         <div className="card">
           <div className="card-label">
-            <span className="icon"><i className="fa-solid fa-arrow-right-arrow-left" /></span>
-            Potencial de migração
+            <span className="icon"><i className="fa-solid fa-money-bill-wave" /></span>
+            Gasto fora do cartão
           </div>
-          <NumInput label="Gasto fora do cartão que pode migrar" hint="online/débito/dinheiro" value={data.gastoMigravel} onChange={v => onChange({ ...data, gastoMigravel: v })} />
+          <NumInput label="Demais gastos mensais (débito, dinheiro, pix)" hint="total sem cartão" value={data.gastoForaCartao} onChange={v => onChange({ ...data, gastoForaCartao: v })} />
+          <div className="input-group" style={{ marginTop: 8 }}>
+            <div className="input-label">% que pode migrar para o cartão <span className="input-hint">{data.pctMigravel}%</span></div>
+            <div className="slider-wrap">
+              <input
+                type="range" min={0} max={100} step={5}
+                value={data.pctMigravel}
+                onChange={e => onChange({ ...data, pctMigravel: parseInt(e.target.value) })}
+              />
+              <div className="slider-labels">
+                <span>0%</span>
+                <span className="mid">≈ {fmt(gastoMigravel)}/mês</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -623,8 +639,9 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
             Potencial mensal
           </div>
           <div style={{ marginBottom: 16 }}>
-            <div className="input-label">Total no cartão</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{fmt(totalMensal)}</div>
+            <div className="input-label">Total elegível no cartão</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{fmt(totalElegivel)}</div>
+            <div className="input-hint" style={{ marginTop: 4 }}>R$ {fmt(data.gastoAtual)} atual + R$ {fmt(gastoMigravel)} migrado</div>
           </div>
           <div>
             <div className="input-label">Pontos gerados/mês</div>
@@ -646,7 +663,8 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
 function StepPFResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
   const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
   const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
-  const totalMensal = data.gastoAtual + data.gastoMigravel
+  const gastoMigravel = Math.round(data.gastoForaCartao * (data.pctMigravel / 100))
+  const totalMensal = data.gastoAtual + gastoMigravel
   const pontosAno = totalMensal * taxaEfetiva * 12
   const valorPontosCartao = pontosAno / 1000 * 35
 
@@ -713,8 +731,8 @@ function StepPFResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
         <div className="breakdown-row">
           <div className="br-label"><i className="fa-solid fa-arrow-right-arrow-left" /> Migrado para o cartão / mês</div>
           <div className="br-values">
-            <div className="br-saving">+ {fmt(data.gastoMigravel)}</div>
-            <div className="br-pct">novo potencial</div>
+            <div className="br-saving">+ {fmt(gastoMigravel)}</div>
+            <div className="br-pct">{data.pctMigravel}% de {fmt(data.gastoForaCartao)}</div>
           </div>
         </div>
         <div className="breakdown-row">
@@ -780,7 +798,7 @@ export default function App() {
   const [s1, setS1] = useState({ fornecedores: 0, ti: 0, marketing: 0, aluguel: 0, seguros: 0, outros: 0 })
   const [s2, setS2] = useState({ nacionais: 0, internacionais: 0, classe: 0.75, hoteis: 0, transporte: 0, combustivel: 0 })
   const [s3, setS3] = useState({ eletro: 0, premios: 0, outros: 0, pontosK: 0, clube: 'nenhum' })
-  const [pfData, setPfData] = useState({ gastoAtual: 0, gastoMigravel: 0, clube: 'nenhum', pontosK: 0 })
+  const [pfData, setPfData] = useState({ gastoAtual: 0, gastoForaCartao: 0, pctMigravel: 60, clube: 'nenhum', pontosK: 0 })
   const [ptsPorUSD, setPtsPorUSD] = useState(2)
   const [cambio, setCambio] = useState(5.20)
 
@@ -793,7 +811,7 @@ export default function App() {
     setS1({ fornecedores: 0, ti: 0, marketing: 0, aluguel: 0, seguros: 0, outros: 0 })
     setS2({ nacionais: 0, internacionais: 0, classe: 0.75, hoteis: 0, transporte: 0, combustivel: 0 })
     setS3({ eletro: 0, premios: 0, outros: 0, pontosK: 0, clube: 'nenhum' })
-    setPfData({ gastoAtual: 0, gastoMigravel: 0, clube: 'nenhum', pontosK: 0 })
+    setPfData({ gastoAtual: 0, gastoForaCartao: 0, pctMigravel: 60, clube: 'nenhum', pontosK: 0 })
   }, [])
 
   return (
