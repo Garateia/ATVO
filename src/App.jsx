@@ -200,7 +200,7 @@ function Step1({ data, onChange, onNext, onBack, ptsPorUSD, cambio, onPtsChange,
       </div>
 
       <div className="nav">
-        <button className="btn btn-secondary" onClick={onBack}>← Voltar</button>
+        <div />
         <button className="btn btn-primary" onClick={onNext}>Próxima etapa →</button>
       </div>
     </>
@@ -506,28 +506,17 @@ function Step4({ s1, s2, s3, ptsPorUSD, cambio, onBack, onRestart }) {
   )
 }
 
-// ─── TIPO SELECTOR ───────────────────────────────────────────────────────────
-function TipoSelector({ onSelect }) {
+// ─── TAB BAR ─────────────────────────────────────────────────────────────────
+function TabBar({ tipo, onChange }) {
   return (
-    <>
-      <div className="section-tag">Calculadora de Pontos</div>
-      <div className="section-title">Qual é o perfil do cliente?</div>
-      <p className="section-desc">
-        A simulação é personalizada conforme o tipo — pessoa física ou empresa.
-      </p>
-      <div className="tipo-grid">
-        <button className="tipo-card" onClick={() => onSelect('pf')}>
-          <div className="tipo-icon"><i className="fa-solid fa-user" /></div>
-          <div className="tipo-label">Pessoa Física</div>
-          <div className="tipo-sub">Consumidor individual que quer maximizar pontos no cartão pessoal</div>
-        </button>
-        <button className="tipo-card" onClick={() => onSelect('pj')}>
-          <div className="tipo-icon"><i className="fa-solid fa-building" /></div>
-          <div className="tipo-label">Pessoa Jurídica</div>
-          <div className="tipo-sub">Empresa ou MEI com gastos operacionais pagáveis no cartão corporativo</div>
-        </button>
-      </div>
-    </>
+    <div className="tab-bar">
+      <button className={`tab-btn${tipo === 'pf' ? ' active' : ''}`} onClick={() => onChange('pf')}>
+        <i className="fa-solid fa-user" /> Pessoa Física
+      </button>
+      <button className={`tab-btn${tipo === 'pj' ? ' active' : ''}`} onClick={() => onChange('pj')}>
+        <i className="fa-solid fa-building" /> Pessoa Jurídica
+      </button>
+    </div>
   )
 }
 
@@ -636,7 +625,7 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
       </div>
 
       <div className="nav">
-        <button className="btn btn-secondary" onClick={onBack}>← Voltar</button>
+        <div />
         <button className="btn btn-primary" onClick={onNext}>Ver Resultado →</button>
       </div>
     </>
@@ -774,7 +763,7 @@ function StepPFResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
 
 // ─── APP ROOT ────────────────────────────────────────────────────────────────
 export default function App() {
-  const [tipo, setTipo] = useState(null)
+  const [tipo, setTipo] = useState('pf')
   const [step, setStep] = useState(1)
   const [pfStep, setPfStep] = useState(1)
 
@@ -787,8 +776,13 @@ export default function App() {
 
   const goTo = useCallback((n) => setStep(n), [])
 
+  const switchTipo = useCallback((t) => {
+    setTipo(t)
+    setStep(1)
+    setPfStep(1)
+  }, [])
+
   const restart = useCallback(() => {
-    setTipo(null)
     setStep(1)
     setPfStep(1)
     setS1({ fornecedores: 0, ti: 0, marketing: 0, aluguel: 0, seguros: 0, outros: 0 })
@@ -800,21 +794,21 @@ export default function App() {
   return (
     <>
       <div className="header">
-        <div style={{ cursor: tipo ? 'pointer' : 'default' }} onClick={tipo ? restart : undefined}>
+        <div style={{ cursor: 'pointer' }} onClick={restart}>
           <div className="logo-text">Calculadora <span>de</span> Pontos</div>
           <div className="logo-sub">ROI · Fidelização</div>
         </div>
       </div>
 
       <div className="container">
-        {!tipo && <TipoSelector onSelect={setTipo} />}
+        <TabBar tipo={tipo} onChange={switchTipo} />
 
         {tipo === 'pf' && pfStep === 1 && (
           <StepPF
             data={pfData} onChange={setPfData}
             ptsPorUSD={ptsPorUSD} cambio={cambio}
             onPtsChange={setPtsPorUSD} onCambioChange={setCambio}
-            onNext={() => setPfStep(2)} onBack={() => setTipo(null)}
+            onNext={() => setPfStep(2)}
           />
         )}
         {tipo === 'pf' && pfStep === 2 && (
@@ -827,7 +821,7 @@ export default function App() {
         {tipo === 'pj' && (
           <>
             <StepProgress current={step} onGo={goTo} />
-            {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} onBack={() => setTipo(null)} ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={setPtsPorUSD} onCambioChange={setCambio} />}
+            {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={setPtsPorUSD} onCambioChange={setCambio} />}
             {step === 2 && <Step2 data={s2} onChange={setS2} onNext={() => goTo(3)} onBack={() => goTo(1)} />}
             {step === 3 && <Step3 data={s3} onChange={setS3} onNext={() => goTo(4)} onBack={() => goTo(2)} />}
             {step === 4 && <Step4 s1={s1} s2={s2} s3={s3} ptsPorUSD={ptsPorUSD} cambio={cambio} onBack={() => goTo(3)} onRestart={restart} />}
