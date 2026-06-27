@@ -101,7 +101,7 @@ function NumInput({ label, hint, value, onChange }) {
 }
 
 // ─── STEP 1 ──────────────────────────────────────────────────────────────────
-function Step1({ data, onChange, onNext, ptsPorUSD, cambio, onPtsChange, onCambioChange }) {
+function Step1({ data, onChange, onNext, onBack, ptsPorUSD, cambio, onPtsChange, onCambioChange }) {
   const [sector, setSector] = useState('servicos')
 
   const total = Object.values(data).reduce((a, v) => a + v, 0)
@@ -200,7 +200,7 @@ function Step1({ data, onChange, onNext, ptsPorUSD, cambio, onPtsChange, onCambi
       </div>
 
       <div className="nav">
-        <div />
+        <button className="btn btn-secondary" onClick={onBack}>← Voltar</button>
         <button className="btn btn-primary" onClick={onNext}>Próxima etapa →</button>
       </div>
     </>
@@ -672,7 +672,7 @@ function StepPFResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
     <>
       <div className="section-tag">Resultado · Pessoa Física</div>
       <div className="section-title">ROI do seu cartão</div>
-      <p className="section-desc">Com base nos seus gastos mensais, este é o potencial de retorno com a estratégia ATVO.</p>
+      <p className="section-desc">Com base nos seus gastos mensais, este é o potencial de retorno com a estratégia de pontos.</p>
 
       <div className="result-hero">
         <div className="headline">Valor gerado pelo cartão / Ano</div>
@@ -800,7 +800,7 @@ export default function App() {
   return (
     <>
       <div className="header">
-        <div>
+        <div style={{ cursor: tipo ? 'pointer' : 'default' }} onClick={tipo ? restart : undefined}>
           <div className="logo-text">Calculadora <span>de</span> Pontos</div>
           <div className="logo-sub">ROI · Fidelização</div>
         </div>
@@ -827,7 +827,7 @@ export default function App() {
         {tipo === 'pj' && (
           <>
             <StepProgress current={step} onGo={goTo} />
-            {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={setPtsPorUSD} onCambioChange={setCambio} />}
+            {step === 1 && <Step1 data={s1} onChange={setS1} onNext={() => goTo(2)} onBack={() => setTipo(null)} ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={setPtsPorUSD} onCambioChange={setCambio} />}
             {step === 2 && <Step2 data={s2} onChange={setS2} onNext={() => goTo(3)} onBack={() => goTo(1)} />}
             {step === 3 && <Step3 data={s3} onChange={setS3} onNext={() => goTo(4)} onBack={() => goTo(2)} />}
             {step === 4 && <Step4 s1={s1} s2={s2} s3={s3} ptsPorUSD={ptsPorUSD} cambio={cambio} onBack={() => goTo(3)} onRestart={restart} />}
