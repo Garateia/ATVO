@@ -77,16 +77,16 @@ function DecimalInput({ label, hint, value, onChange, fallback, prefix }) {
   }, [value, focused])
 
   const handleChange = (e) => {
-    const s = e.target.value.replace(',', '.')
+    const s = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '')
     setRaw(s)
     const n = parseFloat(s)
-    if (!isNaN(n) && n > 0) onChange(n)
+    if (!isNaN(n) && n >= 0) onChange(n)
   }
 
   const handleBlur = () => {
     setFocused(false)
     const n = parseFloat(raw)
-    if (isNaN(n) || n <= 0) {
+    if (isNaN(n) || n < 0) {
       setRaw(String(fallback))
       onChange(fallback)
     } else {
@@ -119,7 +119,7 @@ function PtsCambioRow({ ptsPorUSD, cambio, valorPorPonto, onPtsChange, onCambioC
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 16 }}>
       <DecimalInput label="Pontuação do cartão" hint=" pts/US$" value={ptsPorUSD} fallback={2} onChange={onPtsChange} />
       <DecimalInput label="Câmbio atual" hint=" R$/US$" value={cambio} fallback={5.2} onChange={onCambioChange} prefix="R$" />
-      <DecimalInput label="Valor do ponto" hint=" R$/pt" value={valorPorPonto} fallback={0.035} onChange={onValorChange} prefix="R$" />
+      <DecimalInput label="Valor do ponto" hint=" R$/pt" value={valorPorPonto} fallback={0} onChange={onValorChange} prefix="R$" />
     </div>
   )
 }
@@ -464,7 +464,7 @@ export default function App() {
   const [pjData, setPjData] = useState({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, gastoViagens: 0 })
   const [ptsPorUSD, setPtsPorUSD] = useState(2)
   const [cambio, setCambio] = useState(5.20)
-  const [valorPorPonto, setValorPorPonto] = useState(0.035)
+  const [valorPorPonto, setValorPorPonto] = useState(0)
 
   const switchTipo = useCallback((t) => {
     setTipo(t)
