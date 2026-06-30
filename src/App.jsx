@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from 'react'
 const fmt = (n) => 'R$ ' + Math.round(n).toLocaleString('pt-BR')
 
 const PLANOS_CLUBE = {
-  nenhum:    { mensalidade: 0,      milheiro: 70, limite: 500,  label: 'Sem clube (R$ 70/milheiro)' },
+  nenhum:    { mensalidade: 0,      milheiro: 70, limite: 500,  label: 'Sem clube' },
   pro:       { mensalidade: 43.90,  milheiro: 35, limite: 400,  label: 'Pro — R$ 43,90/mês · até 400 mil pts/mês' },
   master:    { mensalidade: 106.90, milheiro: 35, limite: 500,  label: 'Master — R$ 106,90/mês · até 500 mil pts/mês' },
   vip:       { mensalidade: 211.90, milheiro: 35, limite: 750,  label: 'VIP — R$ 211,90/mês · até 750 mil pts/mês' },
