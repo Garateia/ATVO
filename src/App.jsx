@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n) => 'R$ ' + Math.round(n).toLocaleString('pt-BR')
@@ -66,33 +66,60 @@ function TabBar({ tipo, onChange }) {
 }
 
 
+// ─── DecimalInput ─────────────────────────────────────────────────────────────
+function DecimalInput({ label, hint, value, onChange, fallback, prefix }) {
+  const [raw, setRaw] = useState(String(value))
+  const [focused, setFocused] = useState(false)
+
+  // keep raw in sync when parent changes (e.g. on restart) but not while user is typing
+  useEffect(() => {
+    if (!focused) setRaw(String(value))
+  }, [value, focused])
+
+  const handleChange = (e) => {
+    const s = e.target.value.replace(',', '.')
+    setRaw(s)
+    const n = parseFloat(s)
+    if (!isNaN(n) && n > 0) onChange(n)
+  }
+
+  const handleBlur = () => {
+    setFocused(false)
+    const n = parseFloat(raw)
+    if (isNaN(n) || n <= 0) {
+      setRaw(String(fallback))
+      onChange(fallback)
+    } else {
+      setRaw(String(n))
+    }
+  }
+
+  return (
+    <div className="input-group">
+      <div className="input-label">{label}{hint && <span className="input-hint">{hint}</span>}</div>
+      <div className="input-wrap">
+        {prefix && <span className="prefix">{prefix}</span>}
+        <input
+          type="text"
+          inputMode="decimal"
+          value={raw}
+          style={!prefix ? { paddingLeft: 12 } : undefined}
+          onFocus={() => setFocused(true)}
+          onChange={handleChange}
+          onBlur={handleBlur}
+        />
+      </div>
+    </div>
+  )
+}
+
 // ─── PtsCambioRow ────────────────────────────────────────────────────────────
 function PtsCambioRow({ ptsPorUSD, cambio, valorPorPonto, onPtsChange, onCambioChange, onValorChange }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 16 }}>
-      <div className="input-group">
-        <div className="input-label">Pontuação do cartão <span className="input-hint">pts/US$</span></div>
-        <div className="input-wrap">
-          <input type="number" min={0.1} max={20} step={0.1} value={ptsPorUSD}
-            onChange={e => onPtsChange(parseFloat(e.target.value) || 1)} style={{ paddingLeft: 12 }} />
-        </div>
-      </div>
-      <div className="input-group">
-        <div className="input-label">Câmbio atual <span className="input-hint">R$/US$</span></div>
-        <div className="input-wrap">
-          <span className="prefix">R$</span>
-          <input type="number" min={1} max={20} step={0.01} value={cambio}
-            onChange={e => onCambioChange(parseFloat(e.target.value) || 5.2)} />
-        </div>
-      </div>
-      <div className="input-group">
-        <div className="input-label">Valor do ponto <span className="input-hint">R$/pt</span></div>
-        <div className="input-wrap">
-          <span className="prefix">R$</span>
-          <input type="number" min={0.001} max={2} step={0.001} value={valorPorPonto}
-            onChange={e => onValorChange(parseFloat(e.target.value) || 0.035)} />
-        </div>
-      </div>
+      <DecimalInput label="Pontuação do cartão" hint=" pts/US$" value={ptsPorUSD} fallback={2} onChange={onPtsChange} />
+      <DecimalInput label="Câmbio atual" hint=" R$/US$" value={cambio} fallback={5.2} onChange={onCambioChange} prefix="R$" />
+      <DecimalInput label="Valor do ponto" hint=" R$/pt" value={valorPorPonto} fallback={0.035} onChange={onValorChange} prefix="R$" />
     </div>
   )
 }
@@ -139,18 +166,18 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, valorPorPonto, onPtsChange,
 
       <PtsCambioRow ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto} onPtsChange={onPtsChange} onCambioChange={onCambioChange} onValorChange={onValorChange} />
 
-      <div className="grid-2" style={{ marginTop: 16 }}>
-        <div className="card">
-          <div className="card-label">
-            <span className="icon"><i className="fa-solid fa-chart-line" /></span>
-            Potencial mensal
-          </div>
-          <div style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-label">
+          <span className="icon"><i className="fa-solid fa-chart-line" /></span>
+          Potencial mensal
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+          <div>
             <div className="input-label">Total elegível no cartão</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{fmt(totalElegivel)}</div>
             <div className="input-hint" style={{ marginTop: 4 }}>{fmt(data.gastoAtual)} atual + {fmt(data.gastoMigravel)} migrado</div>
           </div>
-          <div style={{ marginBottom: 16 }}>
+          <div>
             <div className="input-label">Pontos gerados/mês</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{pontosMes.toLocaleString('pt-BR')} pts</div>
             <div className="input-hint" style={{ marginTop: 4 }}>{fmt(totalElegivel)} ÷ R${cambio} × {ptsPorUSD}</div>
