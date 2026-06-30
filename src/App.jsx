@@ -180,7 +180,7 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, valorPorPonto, onPtsChange,
           </div>
           <NumInput label="Demais gastos mensais (débito, dinheiro, pix)" hint="total sem cartão"
             value={data.gastoForaCartao} onChange={v => onChange({ ...data, gastoForaCartao: v })} />
-          <NumInput label="Desses gastos, quanto pode ir pro cartão" hint="valor mensal"
+          <NumInput label="Quanto pode ser feito na internet" hint="valor mensal"
             value={data.gastoMigravel} onChange={v => onChange({ ...data, gastoMigravel: v })} />
         </div>
       </div>
