@@ -3,13 +3,6 @@ import { useState, useCallback, useRef } from 'react'
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n) => 'R$ ' + Math.round(n).toLocaleString('pt-BR')
 
-const PLANOS_CLUBE = {
-  nenhum:    { mensalidade: 0,      milheiro: 70, limite: 500,  label: 'Sem clube' },
-  pro:       { mensalidade: 43.90,  milheiro: 35, limite: 400,  label: 'Pro — R$ 43,90/mês · até 400 mil pts/mês' },
-  master:    { mensalidade: 106.90, milheiro: 35, limite: 500,  label: 'Master — R$ 106,90/mês · até 500 mil pts/mês' },
-  vip:       { mensalidade: 211.90, milheiro: 35, limite: 750,  label: 'VIP — R$ 211,90/mês · até 750 mil pts/mês' },
-  exclusive: { mensalidade: 799.90, milheiro: 35, limite: 1250, label: 'Exclusive — R$ 799,90/mês · até 1,25 mi pts/mês' },
-}
 
 // ─── NumInput ────────────────────────────────────────────────────────────────
 function NumInput({ label, hint, value, onChange }) {
@@ -72,47 +65,6 @@ function TabBar({ tipo, onChange }) {
   )
 }
 
-// ─── ClubeCard ───────────────────────────────────────────────────────────────
-function ClubeCard({ data, onChange }) {
-  const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
-  return (
-    <div className="card">
-      <div className="card-label">
-        <span className="icon"><i className="fa-solid fa-coins" /></span>
-        Clube de Pontos (opcional)
-      </div>
-      <div className="input-group">
-        <div className="input-label">Plano do clube</div>
-        <select
-          value={data.clube}
-          onChange={e => onChange({ ...data, clube: e.target.value, pontosK: Math.min(data.pontosK, PLANOS_CLUBE[e.target.value]?.limite ?? 500) })}
-        >
-          {Object.entries(PLANOS_CLUBE).map(([key, p]) => (
-            <option key={key} value={key}>{p.label}</option>
-          ))}
-        </select>
-      </div>
-      {data.clube !== 'nenhum' && (
-        <div className="input-group">
-          <div className="input-label">Pontos/mês que deseja comprar</div>
-          <div className="slider-wrap">
-            <input
-              type="range"
-              min={0} max={plano.limite} step={10}
-              value={Math.min(data.pontosK, plano.limite)}
-              onChange={e => onChange({ ...data, pontosK: parseInt(e.target.value) })}
-            />
-            <div className="slider-labels">
-              <span>0</span>
-              <span className="mid">{data.pontosK} mil pts</span>
-              <span>{plano.limite >= 1000 ? `${plano.limite / 1000} mi` : `${plano.limite} mil`}</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ─── PtsCambioRow ────────────────────────────────────────────────────────────
 function PtsCambioRow({ ptsPorUSD, cambio, valorPorPonto, onPtsChange, onCambioChange, onValorChange }) {
@@ -188,7 +140,6 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, valorPorPonto, onPtsChange,
       <PtsCambioRow ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto} onPtsChange={onPtsChange} onCambioChange={onCambioChange} onValorChange={onValorChange} />
 
       <div className="grid-2" style={{ marginTop: 16 }}>
-        <ClubeCard data={data} onChange={onChange} />
         <div className="card">
           <div className="card-label">
             <span className="icon"><i className="fa-solid fa-chart-line" /></span>
@@ -222,28 +173,11 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, valorPorPonto, onPtsChange,
 
 // ─── STEP PF RESULT ──────────────────────────────────────────────────────────
 function StepPFResult({ data, ptsPorUSD, cambio, valorPorPonto, onBack, onRestart }) {
-  const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
   const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
   const totalMensal = data.gastoAtual + data.gastoMigravel
   const pontosAno = totalMensal * taxaEfetiva * 12
   const valorPontosCartao = pontosAno * valorPorPonto
-
-  const custoPontosAnual = data.pontosK * plano.milheiro * 12
-  const custoClube = plano.mensalidade * 12
-  const valorPontosComprados = data.pontosK * 1000 * 12 * valorPorPonto
-
-  const econTotal = valorPontosCartao + valorPontosComprados
-  const investimento = custoPontosAnual + custoClube
-  const roiLiquido = econTotal - investimento
-
-  const quarterBars = [3, 6, 9, 12].map(m => {
-    const acum = (econTotal / 12) * m
-    const invest = (investimento / 12) * m
-    const balance = acum - invest
-    const pct = Math.min(100, Math.round(acum / Math.max(econTotal, 1) * 100))
-    const color = balance >= 0 ? '#2ecc71' : '#c9a84c'
-    return { m, balance, pct, color }
-  })
+  const econTotal = valorPontosCartao
 
   return (
     <>
@@ -268,18 +202,6 @@ function StepPFResult({ data, ptsPorUSD, cambio, valorPorPonto, onBack, onRestar
           <div className="rc-value text-green">{fmt(valorPontosCartao)}</div>
           <div className="rc-note">R$ {valorPorPonto}/pt × {Math.round(pontosAno).toLocaleString('pt-BR')} pts</div>
         </div>
-        {investimento > 0 && <>
-          <div className="result-card">
-            <div className="rc-label">Custo do Clube / Ano</div>
-            <div className="rc-value text-gold">{fmt(investimento)}</div>
-            <div className="rc-note">mensalidade + pontos comprados</div>
-          </div>
-          <div className="result-card">
-            <div className="rc-label">ROI Líquido / Ano</div>
-            <div className="rc-value text-green">{fmt(roiLiquido)}</div>
-            <div className="rc-note">economia menos investimento</div>
-          </div>
-        </>}
       </div>
 
       <div className="breakdown">
@@ -303,33 +225,7 @@ function StepPFResult({ data, ptsPorUSD, cambio, valorPorPonto, onBack, onRestar
             <div className="br-pct">100% grátis</div>
           </div>
         </div>
-        {data.pontosK > 0 && (
-          <div className="breakdown-row">
-            <div className="br-label"><i className="fa-solid fa-bag-shopping" /> Pontos comprados via Clube / Ano</div>
-            <div className="br-values">
-              <div className="br-current">{(data.pontosK * 1000 * 12).toLocaleString('pt-BR')} pts</div>
-              <div className="br-saving">= {fmt(valorPontosComprados)}</div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {investimento > 0 && (
-        <div className="payback-bar-wrap">
-          <div className="payback-bar-title">Acúmulo de Valor ao Longo do Ano</div>
-          {quarterBars.map(({ m, balance, pct, color }) => (
-            <div className="bar-row" key={m}>
-              <div className="bar-header">
-                <span className="bar-label">{m} meses</span>
-                <span style={{ color, fontWeight: 700 }}>{balance >= 0 ? '+' : ''}{fmt(balance)}</span>
-              </div>
-              <div className="bar-track">
-                <div className="bar-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className="cta-box">
         <div className="cta-text">
@@ -431,11 +327,6 @@ function StepPJ({ data, onChange, ptsPorUSD, cambio, valorPorPonto, onPtsChange,
 
       <PtsCambioRow ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto} onPtsChange={onPtsChange} onCambioChange={onCambioChange} onValorChange={onValorChange} />
 
-      <div className="grid-2" style={{ marginTop: 16 }}>
-        <ClubeCard data={data} onChange={onChange} />
-        <div />
-      </div>
-
       <div className="nav">
         <div />
         <button className="btn btn-primary" onClick={onNext}>Ver Resultado →</button>
@@ -446,29 +337,12 @@ function StepPJ({ data, onChange, ptsPorUSD, cambio, valorPorPonto, onPtsChange,
 
 // ─── STEP PJ RESULT ──────────────────────────────────────────────────────────
 function StepPJResult({ data, ptsPorUSD, cambio, valorPorPonto, onBack, onRestart }) {
-  const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
   const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
   const totalMensal = data.gastoAtual + data.gastoMigravel
   const pontosAno = totalMensal * taxaEfetiva * 12
   const valorPontosCartao = pontosAno * valorPorPonto
   const econViagens = data.gastoViagens * 0.75
-
-  const custoPontosAnual = data.pontosK * plano.milheiro * 12
-  const custoClube = plano.mensalidade * 12
-  const valorPontosComprados = data.pontosK * 1000 * 12 * valorPorPonto
-
-  const econTotal = valorPontosCartao + econViagens + valorPontosComprados
-  const investimento = custoPontosAnual + custoClube
-  const roiLiquido = econTotal - investimento
-
-  const quarterBars = [3, 6, 9, 12].map(m => {
-    const acum = (econTotal / 12) * m
-    const invest = (investimento / 12) * m
-    const balance = acum - invest
-    const pct = Math.min(100, Math.round(acum / Math.max(econTotal, 1) * 100))
-    const color = balance >= 0 ? '#2ecc71' : '#c9a84c'
-    return { m, balance, pct, color }
-  })
+  const econTotal = valorPontosCartao + econViagens
 
   return (
     <>
@@ -498,13 +372,6 @@ function StepPJResult({ data, ptsPorUSD, cambio, valorPorPonto, onBack, onRestar
             <div className="rc-label">Economia em viagens / Ano</div>
             <div className="rc-value text-green">{fmt(econViagens)}</div>
             <div className="rc-note">~75% de economia média usando pontos</div>
-          </div>
-        )}
-        {investimento > 0 && (
-          <div className="result-card">
-            <div className="rc-label">ROI Líquido / Ano</div>
-            <div className="rc-value text-green">{fmt(roiLiquido)}</div>
-            <div className="rc-note">economia menos investimento</div>
           </div>
         )}
       </div>
@@ -540,33 +407,7 @@ function StepPJResult({ data, ptsPorUSD, cambio, valorPorPonto, onBack, onRestar
             </div>
           </div>
         )}
-        {data.pontosK > 0 && (
-          <div className="breakdown-row">
-            <div className="br-label"><i className="fa-solid fa-bag-shopping" /> Pontos comprados via Clube / Ano</div>
-            <div className="br-values">
-              <div className="br-current">{(data.pontosK * 1000 * 12).toLocaleString('pt-BR')} pts</div>
-              <div className="br-saving">= {fmt(valorPontosComprados)}</div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {investimento > 0 && (
-        <div className="payback-bar-wrap">
-          <div className="payback-bar-title">Acúmulo de Valor ao Longo do Ano</div>
-          {quarterBars.map(({ m, balance, pct, color }) => (
-            <div className="bar-row" key={m}>
-              <div className="bar-header">
-                <span className="bar-label">{m} meses</span>
-                <span style={{ color, fontWeight: 700 }}>{balance >= 0 ? '+' : ''}{fmt(balance)}</span>
-              </div>
-              <div className="bar-track">
-                <div className="bar-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}88, ${color})` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className="cta-box">
         <div className="cta-text">
@@ -592,8 +433,8 @@ export default function App() {
   const [pfStep, setPfStep] = useState(1)
   const [pjStep, setPjStep] = useState(1)
 
-  const [pfData, setPfData] = useState({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, clube: 'nenhum', pontosK: 0 })
-  const [pjData, setPjData] = useState({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, gastoViagens: 0, clube: 'nenhum', pontosK: 0 })
+  const [pfData, setPfData] = useState({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0 })
+  const [pjData, setPjData] = useState({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, gastoViagens: 0 })
   const [ptsPorUSD, setPtsPorUSD] = useState(2)
   const [cambio, setCambio] = useState(5.20)
   const [valorPorPonto, setValorPorPonto] = useState(0.035)
@@ -607,8 +448,8 @@ export default function App() {
   const restart = useCallback(() => {
     setPfStep(1)
     setPjStep(1)
-    setPfData({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, clube: 'nenhum', pontosK: 0 })
-    setPjData({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, gastoViagens: 0, clube: 'nenhum', pontosK: 0 })
+    setPfData({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0 })
+    setPjData({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, gastoViagens: 0 })
   }, [])
 
   return (
