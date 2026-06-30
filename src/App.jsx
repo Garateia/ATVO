@@ -482,9 +482,37 @@ export default function App() {
   return (
     <>
       <div className="header">
-        <div style={{ cursor: 'pointer' }} onClick={restart}>
-          <div className="logo-text">Calculadora <span>de</span> Pontos</div>
-          <div className="logo-sub">ROI · Fidelização</div>
+        <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }} onClick={restart}>
+          <svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#e8c96a"/>
+                <stop offset="100%" stopColor="#b8921a"/>
+              </linearGradient>
+              <filter id="gw">
+                <feGaussianBlur stdDeviation="1.2" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            {/* outer hex */}
+            <polygon points="22,3 36,3 43,15 36,27 22,27 15,15" fill="none" stroke="url(#lg)" strokeWidth="1.6" opacity="0.45"/>
+            {/* inner hex */}
+            <polygon points="22,8 32,14 32,20 22,26 12,20 12,14" fill="none" stroke="url(#lg)" strokeWidth="1" opacity="0.2"/>
+            {/* arrow up */}
+            <line x1="22" y1="23" x2="22" y2="9" stroke="url(#lg)" strokeWidth="2" strokeLinecap="round" filter="url(#gw)"/>
+            <polyline points="16,16 22,8 28,16" fill="none" stroke="url(#lg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" filter="url(#gw)"/>
+            {/* ponto */}
+            <circle cx="22" cy="23" r="2.4" fill="url(#lg)" filter="url(#gw)"/>
+            {/* corner dots */}
+            <circle cx="15" cy="6" r="1" fill="#c9a84c" opacity="0.35"/>
+            <circle cx="36" cy="3" r="1" fill="#c9a84c" opacity="0" />
+            <circle cx="43" cy="15" r="1" fill="#c9a84c" opacity="0.35"/>
+            <circle cx="15" cy="24" r="1" fill="#c9a84c" opacity="0.35"/>
+          </svg>
+          <div>
+            <div className="logo-text">Calculadora <span>de</span> Pontos</div>
+            <div className="logo-sub">ROI · Fidelização</div>
+          </div>
         </div>
       </div>
 
