@@ -459,6 +459,12 @@ export default function App() {
   const [tipo, setTipo] = useState('pf')
   const [pfStep, setPfStep] = useState(1)
   const [pjStep, setPjStep] = useState(1)
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   const [pfData, setPfData] = useState({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0 })
   const [pjData, setPjData] = useState({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, gastoViagens: 0 })
@@ -492,6 +498,13 @@ export default function App() {
             <div className="logo-sub">ROI · Fidelização</div>
           </div>
         </div>
+        <button
+          onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: 'var(--muted)', fontSize: 16, transition: 'all 0.2s' }}
+          title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+        >
+          <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} />
+        </button>
       </div>
 
       <div className="container">
