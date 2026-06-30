@@ -115,11 +115,11 @@ function ClubeCard({ data, onChange }) {
 }
 
 // ─── PtsCambioRow ────────────────────────────────────────────────────────────
-function PtsCambioRow({ ptsPorUSD, cambio, onPtsChange, onCambioChange }) {
+function PtsCambioRow({ ptsPorUSD, cambio, valorPorPonto, onPtsChange, onCambioChange, onValorChange }) {
   return (
-    <div className="grid-2" style={{ marginTop: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 16 }}>
       <div className="input-group">
-        <div className="input-label">Pontuação do cartão <span className="input-hint">pts por US$</span></div>
+        <div className="input-label">Pontuação do cartão <span className="input-hint">pts/US$</span></div>
         <div className="input-wrap">
           <input type="number" min={0.1} max={20} step={0.1} value={ptsPorUSD}
             onChange={e => onPtsChange(parseFloat(e.target.value) || 1)} style={{ paddingLeft: 12 }} />
@@ -133,15 +133,24 @@ function PtsCambioRow({ ptsPorUSD, cambio, onPtsChange, onCambioChange }) {
             onChange={e => onCambioChange(parseFloat(e.target.value) || 5.2)} />
         </div>
       </div>
+      <div className="input-group">
+        <div className="input-label">Valor do ponto <span className="input-hint">R$/pt</span></div>
+        <div className="input-wrap">
+          <span className="prefix">R$</span>
+          <input type="number" min={0.001} max={2} step={0.001} value={valorPorPonto}
+            onChange={e => onValorChange(parseFloat(e.target.value) || 0.035)} />
+        </div>
+      </div>
     </div>
   )
 }
 
 // ─── STEP PF ─────────────────────────────────────────────────────────────────
-function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange, onNext }) {
+function StepPF({ data, onChange, ptsPorUSD, cambio, valorPorPonto, onPtsChange, onCambioChange, onValorChange, onNext }) {
   const totalElegivel = data.gastoAtual + data.gastoMigravel
   const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
   const pontosMes = Math.round(totalElegivel * taxaEfetiva)
+  const retornoMes = pontosMes * valorPorPonto
 
   return (
     <>
@@ -176,7 +185,7 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
         </div>
       </div>
 
-      <PtsCambioRow ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={onPtsChange} onCambioChange={onCambioChange} />
+      <PtsCambioRow ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto} onPtsChange={onPtsChange} onCambioChange={onCambioChange} onValorChange={onValorChange} />
 
       <div className="grid-2" style={{ marginTop: 16 }}>
         <ClubeCard data={data} onChange={onChange} />
@@ -190,10 +199,15 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{fmt(totalElegivel)}</div>
             <div className="input-hint" style={{ marginTop: 4 }}>{fmt(data.gastoAtual)} atual + {fmt(data.gastoMigravel)} migrado</div>
           </div>
-          <div>
+          <div style={{ marginBottom: 16 }}>
             <div className="input-label">Pontos gerados/mês</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{pontosMes.toLocaleString('pt-BR')} pts</div>
-            <div className="input-hint" style={{ marginTop: 4 }}>{ptsPorUSD} pts/US$ ÷ R$ {cambio} = {taxaEfetiva.toFixed(3)} pts/R$</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{pontosMes.toLocaleString('pt-BR')} pts</div>
+            <div className="input-hint" style={{ marginTop: 4 }}>{fmt(totalElegivel)} ÷ R${cambio} × {ptsPorUSD}</div>
+          </div>
+          <div>
+            <div className="input-label">Retorno estimado/mês</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{fmt(retornoMes)}</div>
+            <div className="input-hint" style={{ marginTop: 4 }}>{pontosMes.toLocaleString('pt-BR')} pts × R${valorPorPonto}/pt</div>
           </div>
         </div>
       </div>
@@ -207,16 +221,16 @@ function StepPF({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
 }
 
 // ─── STEP PF RESULT ──────────────────────────────────────────────────────────
-function StepPFResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
+function StepPFResult({ data, ptsPorUSD, cambio, valorPorPonto, onBack, onRestart }) {
   const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
   const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
   const totalMensal = data.gastoAtual + data.gastoMigravel
   const pontosAno = totalMensal * taxaEfetiva * 12
-  const valorPontosCartao = pontosAno / 1000 * 35
+  const valorPontosCartao = pontosAno * valorPorPonto
 
   const custoPontosAnual = data.pontosK * plano.milheiro * 12
   const custoClube = plano.mensalidade * 12
-  const valorPontosComprados = data.pontosK * 1000 * 12 * 0.08
+  const valorPontosComprados = data.pontosK * 1000 * 12 * valorPorPonto
 
   const econTotal = valorPontosCartao + valorPontosComprados
   const investimento = custoPontosAnual + custoClube
@@ -252,7 +266,7 @@ function StepPFResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
         <div className="result-card">
           <div className="rc-label">Valor dos pontos / Ano</div>
           <div className="rc-value text-green">{fmt(valorPontosCartao)}</div>
-          <div className="rc-note">a R$ 35/milheiro via resgate</div>
+          <div className="rc-note">R$ {valorPorPonto}/pt × {Math.round(pontosAno).toLocaleString('pt-BR')} pts</div>
         </div>
         {investimento > 0 && <>
           <div className="result-card">
@@ -336,10 +350,11 @@ function StepPFResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
 }
 
 // ─── STEP PJ ─────────────────────────────────────────────────────────────────
-function StepPJ({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange, onNext }) {
+function StepPJ({ data, onChange, ptsPorUSD, cambio, valorPorPonto, onPtsChange, onCambioChange, onValorChange, onNext }) {
   const totalElegivel = data.gastoAtual + data.gastoMigravel
   const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
   const pontosMes = Math.round(totalElegivel * taxaEfetiva)
+  const retornoMes = pontosMes * valorPorPonto
   const econViagens = data.gastoViagens * 0.75
 
   return (
@@ -394,10 +409,15 @@ function StepPJ({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{fmt(totalElegivel)}</div>
             <div className="input-hint" style={{ marginTop: 4 }}>{fmt(data.gastoAtual)} atual + {fmt(data.gastoMigravel)} migrado</div>
           </div>
-          <div style={{ marginBottom: econViagens > 0 ? 16 : 0 }}>
+          <div style={{ marginBottom: 16 }}>
             <div className="input-label">Pontos gerados / mês</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{pontosMes.toLocaleString('pt-BR')} pts</div>
-            <div className="input-hint" style={{ marginTop: 4 }}>{ptsPorUSD} pts/US$ ÷ R$ {cambio} = {taxaEfetiva.toFixed(3)} pts/R$</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>{pontosMes.toLocaleString('pt-BR')} pts</div>
+            <div className="input-hint" style={{ marginTop: 4 }}>{fmt(totalElegivel)} ÷ R${cambio} × {ptsPorUSD}</div>
+          </div>
+          <div style={{ marginBottom: econViagens > 0 ? 16 : 0 }}>
+            <div className="input-label">Retorno estimado / mês</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{fmt(retornoMes)}</div>
+            <div className="input-hint" style={{ marginTop: 4 }}>{pontosMes.toLocaleString('pt-BR')} pts × R${valorPorPonto}/pt</div>
           </div>
           {econViagens > 0 && (
             <div>
@@ -409,7 +429,7 @@ function StepPJ({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
         </div>
       </div>
 
-      <PtsCambioRow ptsPorUSD={ptsPorUSD} cambio={cambio} onPtsChange={onPtsChange} onCambioChange={onCambioChange} />
+      <PtsCambioRow ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto} onPtsChange={onPtsChange} onCambioChange={onCambioChange} onValorChange={onValorChange} />
 
       <div className="grid-2" style={{ marginTop: 16 }}>
         <ClubeCard data={data} onChange={onChange} />
@@ -425,17 +445,17 @@ function StepPJ({ data, onChange, ptsPorUSD, cambio, onPtsChange, onCambioChange
 }
 
 // ─── STEP PJ RESULT ──────────────────────────────────────────────────────────
-function StepPJResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
+function StepPJResult({ data, ptsPorUSD, cambio, valorPorPonto, onBack, onRestart }) {
   const plano = PLANOS_CLUBE[data.clube] ?? PLANOS_CLUBE.nenhum
   const taxaEfetiva = cambio > 0 ? ptsPorUSD / cambio : 0
   const totalMensal = data.gastoAtual + data.gastoMigravel
   const pontosAno = totalMensal * taxaEfetiva * 12
-  const valorPontosCartao = pontosAno / 1000 * 35
+  const valorPontosCartao = pontosAno * valorPorPonto
   const econViagens = data.gastoViagens * 0.75
 
   const custoPontosAnual = data.pontosK * plano.milheiro * 12
   const custoClube = plano.mensalidade * 12
-  const valorPontosComprados = data.pontosK * 1000 * 12 * 0.08
+  const valorPontosComprados = data.pontosK * 1000 * 12 * valorPorPonto
 
   const econTotal = valorPontosCartao + econViagens + valorPontosComprados
   const investimento = custoPontosAnual + custoClube
@@ -471,7 +491,7 @@ function StepPJResult({ data, ptsPorUSD, cambio, onBack, onRestart }) {
         <div className="result-card">
           <div className="rc-label">Valor dos pontos / Ano</div>
           <div className="rc-value text-green">{fmt(valorPontosCartao)}</div>
-          <div className="rc-note">a R$ 35/milheiro via resgate</div>
+          <div className="rc-note">R$ {valorPorPonto}/pt × {Math.round(pontosAno).toLocaleString('pt-BR')} pts</div>
         </div>
         {econViagens > 0 && (
           <div className="result-card">
@@ -576,6 +596,7 @@ export default function App() {
   const [pjData, setPjData] = useState({ gastoAtual: 0, gastoForaCartao: 0, gastoMigravel: 0, gastoViagens: 0, clube: 'nenhum', pontosK: 0 })
   const [ptsPorUSD, setPtsPorUSD] = useState(2)
   const [cambio, setCambio] = useState(5.20)
+  const [valorPorPonto, setValorPorPonto] = useState(0.035)
 
   const switchTipo = useCallback((t) => {
     setTipo(t)
@@ -605,14 +626,14 @@ export default function App() {
         {tipo === 'pf' && pfStep === 1 && (
           <StepPF
             data={pfData} onChange={setPfData}
-            ptsPorUSD={ptsPorUSD} cambio={cambio}
-            onPtsChange={setPtsPorUSD} onCambioChange={setCambio}
+            ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto}
+            onPtsChange={setPtsPorUSD} onCambioChange={setCambio} onValorChange={setValorPorPonto}
             onNext={() => setPfStep(2)}
           />
         )}
         {tipo === 'pf' && pfStep === 2 && (
           <StepPFResult
-            data={pfData} ptsPorUSD={ptsPorUSD} cambio={cambio}
+            data={pfData} ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto}
             onBack={() => setPfStep(1)} onRestart={restart}
           />
         )}
@@ -620,14 +641,14 @@ export default function App() {
         {tipo === 'pj' && pjStep === 1 && (
           <StepPJ
             data={pjData} onChange={setPjData}
-            ptsPorUSD={ptsPorUSD} cambio={cambio}
-            onPtsChange={setPtsPorUSD} onCambioChange={setCambio}
+            ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto}
+            onPtsChange={setPtsPorUSD} onCambioChange={setCambio} onValorChange={setValorPorPonto}
             onNext={() => setPjStep(2)}
           />
         )}
         {tipo === 'pj' && pjStep === 2 && (
           <StepPJResult
-            data={pjData} ptsPorUSD={ptsPorUSD} cambio={cambio}
+            data={pjData} ptsPorUSD={ptsPorUSD} cambio={cambio} valorPorPonto={valorPorPonto}
             onBack={() => setPjStep(1)} onRestart={restart}
           />
         )}
